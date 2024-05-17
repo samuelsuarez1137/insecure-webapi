@@ -1,10 +1,5 @@
 <?php 
-function loadDatabaseSettings($pathjs){
-	$string = file_get_contents($pathjs);
-	$json_a = json_decode($string, true);
-	return $json_a;
-}
-
+include 'conection/BDconection.php';
 function getToken(){
 	//creamos el objeto fecha y obtuvimos la cantidad de segundos desde el 1ª enero 1970
 	$fecha = date_create();
@@ -26,12 +21,13 @@ function getToken(){
 
 require 'vendor/autoload.php';
 $f3 = \Base::instance();
-/*
+
 $f3->route('GET /',
 	function() {
 		echo 'Hello, world!';
 	}
 );
+/*
 $f3->route('GET /saludo/@nombre',
 	function($f3) {
 		echo 'Hola '.$f3->get('PARAMS.nombre');
@@ -51,12 +47,7 @@ $f3->route('GET /saludo/@nombre',
 
 $f3->route('POST /Registro',
 	function($f3) {
-		$dbcnf = loadDatabaseSettings('db.json');
-		$db=new DB\SQL(
-			'mysql:host=localhost;port='.$dbcnf['port'].';dbname='.$dbcnf['dbname'],
-			$dbcnf['user'],
-			$dbcnf['password']
-		);
+		$db = BD();
 		$db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 		/////// obtener el cuerpo de la peticion
 		$Cuerpo = $f3->get('BODY');
@@ -98,12 +89,7 @@ $f3->route('POST /Registro',
 
 $f3->route('POST /Login',
 	function($f3) {
-		$dbcnf = loadDatabaseSettings('db.json');
-		$db=new DB\SQL(
-			'mysql:host=localhost;port='.$dbcnf['port'].';dbname='.$dbcnf['dbname'],
-			$dbcnf['user'],
-			$dbcnf['password']
-		);
+		$db = BD();
 		$db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 		/////// obtener el cuerpo de la peticion
 		$Cuerpo = $f3->get('BODY');
@@ -169,12 +155,7 @@ $f3->route('POST /Imagen',
 			return;
 		}
 		
-		$dbcnf = loadDatabaseSettings('db.json');
-		$db=new DB\SQL(
-			'mysql:host=localhost;port='.$dbcnf['port'].';dbname='.$dbcnf['dbname'],
-			$dbcnf['user'],
-			$dbcnf['password']
-		);
+		$db = BD();
 		$db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 		// Validar si el usuario esta en la base de datos
 		$TKN = $jsB['token'];
@@ -214,12 +195,7 @@ $f3->route('POST /Imagen',
 
 $f3->route('POST /Descargar',
 	function($f3) {
-		$dbcnf = loadDatabaseSettings('db.json');
-		$db=new DB\SQL(
-			'mysql:host=localhost;port='.$dbcnf['port'].';dbname='.$dbcnf['dbname'],
-			$dbcnf['user'],
-			$dbcnf['password']
-		);
+		$db = BD();
 		$db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 		/////// obtener el cuerpo de la peticion
 		$Cuerpo = $f3->get('BODY');

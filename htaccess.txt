@@ -5,7 +5,9 @@ RewriteEngine On
 # In such cases, it should be the path (relative to the document root)
 # containing this .htaccess file
  
-RewriteRule ^(lib|tmp)\/|\.(ini|php)$ - [R=404]
+RewriteRule ^(app|dict|ns|tmp)\/|\.ini$ - [R=404]
+RewriteRule ^conection/ - [R=404]
+
  
 RewriteCond %{REQUEST_FILENAME} !-l
 RewriteCond %{REQUEST_FILENAME} !-f
