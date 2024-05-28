@@ -105,6 +105,7 @@ $f3->route('POST /Login',
 		// TODO Control de error de la $DB
 		try {
 			$R = $db->exec('Select id from  Usuario where uname ="'.$jsB['uname'].'" and password = md5("'.$jsB['password'].'");');
+			$id_usuario = $R[0]['id'];
 		} catch (Exception $e) {
 			echo '{"R":-2}';
 			return;
@@ -113,7 +114,17 @@ $f3->route('POST /Login',
 			echo '{"R":-3}';
 			return;
 		}
+
 		$T = getToken();
+		// Insertar en la tabla Logins
+		$stmt = $db->prepare('INSERT INTO Logins (id_usuario, log_login, fecha) VALUES (:id_usuario, :log_login, NOW())');
+		$log_login = 'ID: '.$id_usuario.', Token: ' . $T.' iniciarion secion';
+		$stmt->bindParam(':id_usuario', $id_usuario, \PDO::PARAM_INT);
+		$stmt->bindParam(':log_login', $log_login, \PDO::PARAM_STR);
+		$stmt->execute();
+		$stmt->closeCursor();
+
+
 		//file_put_contents('/tmp/log','insert into AccesoToken values('.$R[0].',"'.$T.'",now())');
 		$db->exec('Delete from AccesoToken where id_Usuario = "'.$R[0]['id'].'";');
 		$R = $db->exec('insert into AccesoToken values('.$R[0]['id'].',"'.$T.'",now())');
