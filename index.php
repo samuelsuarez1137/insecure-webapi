@@ -206,7 +206,7 @@ $f3->route('POST /Descargar',
     function($f3) {
         $db = BD();
         $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-        /////// obtener el cuerpo de la peticion
+        /////// obtener el cuerpo de la petición
         $Cuerpo = $f3->get('BODY');
         $jsB = json_decode($Cuerpo,true);
         /////////////
@@ -232,20 +232,36 @@ $f3->route('POST /Descargar',
             echo '{"R":-3}';
             return;
         }
-        
-        // Buscar imagen y enviarla
+
+        // Verificar si el ID de la imagen corresponde al ID del token
+        try {
+            $stmt = $db->prepare('SELECT id_Usuario FROM Imagen WHERE id = :id');
+            $stmt->bindParam(':id', $jsB['id'], \PDO::PARAM_INT);
+            $stmt->execute();
+            $imagenResult = $stmt->fetch(\PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            echo '{"R":-4}';
+            return;
+        }
+
+        if (!$imagenResult || $imagenResult['id_Usuario'] !== $result['id_Usuario']) {
+            echo '{"R":-5}';
+            return;
+        }
+
+        // Si el ID de la imagen coincide con el ID del token, enviar la imagen
         try {
             $stmt = $db->prepare('SELECT name, ruta FROM Imagen WHERE id = :id');
             $stmt->bindParam(':id', $jsB['id'], \PDO::PARAM_INT);
             $stmt->execute();
             $result = $stmt->fetch(\PDO::FETCH_ASSOC);
-        }catch (Exception $e) {
-            echo '{"R":-4}';
+        } catch (Exception $e) {
+            echo '{"R":-6}';
             return;
         }
 
-        if (!$result){
-            echo '{"R":-5}';
+        if (!$result) {
+            echo '{"R":-7}';
             return;
         }
 
