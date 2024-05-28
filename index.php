@@ -48,7 +48,12 @@ $f3->route('POST /Registro',
             $stmt = $db->prepare('INSERT INTO Usuario (uname, email, password) VALUES (:uname, :email, :password)');
             $stmt->bindParam(':uname', $jsB['uname'], \PDO::PARAM_STR);
             $stmt->bindParam(':email', $jsB['email'], \PDO::PARAM_STR);
-            $stmt->bindParam(':password', md5($jsB['password']), \PDO::PARAM_STR);
+            $options = [
+                'cost' => 12 // (número de iteraciones)
+            ];
+            
+            $hashedPassword = password_hash($jsB['password'], PASSWORD_DEFAULT, $options);
+            $stmt->bindParam(':password', $hashedPassword, \PDO::PARAM_STR);
             $stmt->execute();
         } catch (Exception $e) {
             echo '{"R":-2}';
@@ -63,7 +68,7 @@ $f3->route('POST /Login',
     function($f3) {
         $db = BD();
         $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-        /////// obtener el cuerpo de la peticion
+        /////// obtener el cuerpo de la petición
         $Cuerpo = $f3->get('BODY');
         $jsB = json_decode($Cuerpo,true);
         /////////////
@@ -72,11 +77,9 @@ $f3->route('POST /Login',
             echo '{"R":-1}';
             return;
         }
-
         try {
-            $stmt = $db->prepare('SELECT id FROM Usuario WHERE uname = :uname AND password = :password');
+            $stmt = $db->prepare('SELECT id, password FROM Usuario WHERE uname = :uname');
             $stmt->bindParam(':uname', $jsB['uname'], \PDO::PARAM_STR);
-            $stmt->bindParam(':password', md5($jsB['password']), \PDO::PARAM_STR);
             $stmt->execute();
             $result = $stmt->fetch(\PDO::FETCH_ASSOC);
         } catch (Exception $e) {
@@ -84,7 +87,7 @@ $f3->route('POST /Login',
             return;
         }
 
-        if (!$result){
+        if (!$result || !password_verify($jsB['password'], $result['password'])) {
             echo '{"R":-3}';
             return;
         }
@@ -120,6 +123,7 @@ $f3->route('POST /Login',
         echo '{"R":0,"D":"'.$T.'"}';
     }
 );
+
 
 // Subir Imagen
 $f3->route('POST /Imagen',
