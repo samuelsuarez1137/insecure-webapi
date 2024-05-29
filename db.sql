@@ -49,3 +49,13 @@ FOREIGN KEY (id_Usuario) REFERENCES Usuario(ID);
 ALTER TABLE Imagen 
 ADD CONSTRAINT FK_I_U
 FOREIGN KEY (id_Usuario) REFERENCES Usuario(ID); 
+
+
+=============================================
+ALTER TABLE Usuario
+ADD clave VARCHAR(50);
+
+
+ALTER TABLE Usuario
+MODIFY clave VARCHAR(100);
+

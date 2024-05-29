@@ -29,6 +29,7 @@ $f3->route('GET /',
     }
 );
 
+
 // Registro
 $f3->route('POST /Registro',
     function($f3) {
@@ -43,23 +44,27 @@ $f3->route('POST /Registro',
             echo '{"R":-1}';
             return;
         }
+        $options = [
+            'cost' => 12 // (número de iteraciones)
+        ];
+
+        $authenticator = new PHPGangsta_GoogleAuthenticator();
+        $secret = $authenticator->createSecret();
+
 
         try {
-            $stmt = $db->prepare('INSERT INTO Usuario (uname, email, password) VALUES (:uname, :email, :password)');
+            $stmt = $db->prepare('INSERT INTO Usuario (uname, email, password, clave) VALUES (:uname, :email, :password, :clave)');
             $stmt->bindParam(':uname', $jsB['uname'], \PDO::PARAM_STR);
             $stmt->bindParam(':email', $jsB['email'], \PDO::PARAM_STR);
-            $options = [
-                'cost' => 12 // (número de iteraciones)
-            ];
-            
             $hashedPassword = password_hash($jsB['password'], PASSWORD_DEFAULT, $options);
             $stmt->bindParam(':password', $hashedPassword, \PDO::PARAM_STR);
+            $stmt->bindParam(':clave', $secret, \PDO::PARAM_STR);
             $stmt->execute();
         } catch (Exception $e) {
             echo '{"R":-2}';
             return;
         }
-        echo '{"R":0}';
+        echo '{"R":0, "T": '.$secret.'}';
     }
 );
 
@@ -97,7 +102,80 @@ $f3->route('POST /Login',
 
         try {
             $stmt = $db->prepare('INSERT INTO Logins (id_usuario, log_login, fecha) VALUES (:id_usuario, :log_login, NOW())');
-            $log_login = 'ID: '.$id_usuario.', Token: ' . $T.' inició sesión';
+            $log_login = 'ID: '.$id_usuario.', Token: ' . $T.' inició sesión con Usr y Pass';
+            $stmt->bindParam(':id_usuario', $id_usuario, \PDO::PARAM_INT);
+            $stmt->bindParam(':log_login', $log_login, \PDO::PARAM_STR);
+            $stmt->execute();
+        } catch (Exception $e) {
+            echo '{"R":-2}';
+            return;
+        }
+
+        // Eliminar token antiguo y guardar nuevo
+        try {
+            $stmt = $db->prepare('DELETE FROM AccesoToken WHERE id_Usuario = :id_usuario');
+            $stmt->bindParam(':id_usuario', $id_usuario, \PDO::PARAM_INT);
+            $stmt->execute();
+            $stmt = $db->prepare('INSERT INTO AccesoToken (id_Usuario, token, fecha) VALUES (:id_usuario, :token, NOW())');
+            $stmt->bindParam(':id_usuario', $id_usuario, \PDO::PARAM_INT);
+            $stmt->bindParam(':token', $T, \PDO::PARAM_STR);
+            $stmt->execute();
+        } catch (Exception $e) {
+            echo '{"R":-2}';
+            return;
+        }
+
+        echo '{"R":0,"D":"'.$T.'"}';
+    }
+);
+
+
+// Login con Codigo
+$f3->route('POST /LoginCodigo',
+    function($f3) {
+        $db = BD();
+        $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        /////// obtener el cuerpo de la petición
+        $Cuerpo = $f3->get('BODY');
+        $jsB = json_decode($Cuerpo,true);
+        /////////////
+        $R = array_key_exists('uname',$jsB) && array_key_exists('codigo',$jsB);
+        if (!$R){
+            echo '{"R":-1}';
+            return;
+        }
+        try {
+            $stmt = $db->prepare('SELECT id, clave FROM Usuario WHERE uname = :uname');
+            $stmt->bindParam(':uname', $jsB['uname'], \PDO::PARAM_STR);
+            $stmt->execute();
+            $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            echo '{"R":-2}';
+            return;
+        }
+
+        if (!$result) {
+            echo '{"R":-3}';
+            return;
+        }
+
+        $authenticator = new PHPGangsta_GoogleAuthenticator();
+        $clave= $result['clave'];
+        $otp = $jsB['codigo']; 
+        $tolerance = 0; // Cada OTP es válido durante 30 segundos.
+
+        $checkResult = $authenticator->verifyCode($clave, $otp, $tolerance);
+        if (!$checkResult) {
+            echo '{"R":-3}';
+            return;
+        } 
+
+        $id_usuario = $result['id'];
+        $T = getToken();
+
+        try {
+            $stmt = $db->prepare('INSERT INTO Logins (id_usuario, log_login, fecha) VALUES (:id_usuario, :log_login, NOW())');
+            $log_login = 'ID: '.$id_usuario.', Token: ' . $T.' inició sesión con Codigo';
             $stmt->bindParam(':id_usuario', $id_usuario, \PDO::PARAM_INT);
             $stmt->bindParam(':log_login', $log_login, \PDO::PARAM_STR);
             $stmt->execute();
